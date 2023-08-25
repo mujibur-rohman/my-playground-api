@@ -12,4 +12,16 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export default { register };
+const login = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await authService.login(req.body);
+    res.status(200).json({
+      data: result,
+      message: "Login Success",
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export default { register, login };

@@ -1,8 +1,12 @@
 import { db } from "../app/database";
 import { ResponseError } from "../error/response-error";
+import { signJWT } from "../utils/jwt";
 import { logger } from "../utils/logger";
 import { validate } from "../validation";
-import { registerValidation } from "../validation/auth.validation";
+import {
+  loginValidation,
+  registerValidation,
+} from "../validation/auth.validation";
 import bcrypt from "bcrypt";
 
 const register = async (request: any) => {
@@ -34,6 +38,56 @@ const register = async (request: any) => {
   });
 };
 
+const login = async (request: any) => {
+  const userValid = validate(loginValidation, request);
+
+  const user = await db.user.findUnique({
+    where: {
+      username: userValid.username,
+    },
+    select: {
+      username: true,
+      password: true,
+      name: true,
+      profile: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new ResponseError(403, "username not registered");
+  }
+
+  const isPasswordValid = await bcrypt.compare(
+    userValid.password,
+    user.password
+  );
+
+  if (!isPasswordValid) {
+    throw new ResponseError(403, "password wrong");
+  }
+
+  const accessToken = signJWT(
+    {
+      username: user.username,
+      role: user.role,
+    },
+    {
+      expiresIn: "1d",
+    }
+  );
+
+  return {
+    name: user.name,
+    username: user.username,
+    role: user.role,
+    token: {
+      accessToken,
+    },
+  };
+};
+
 export default {
   register,
+  login,
 };
