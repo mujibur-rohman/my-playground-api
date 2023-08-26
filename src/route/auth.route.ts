@@ -6,5 +6,6 @@ export const AuthRouter: Router = Router();
 
 AuthRouter.post("/", authController.login);
 AuthRouter.post("/register", verifyJWT, authController.register);
+AuthRouter.post("/refreshToken", authController.refreshToken);
 
 export default AuthRouter;

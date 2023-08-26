@@ -12,4 +12,8 @@ const loginValidation = Joi.object({
   password: Joi.string().max(100).required(),
 });
 
-export { loginValidation, registerValidation };
+const refreshValidation = Joi.object({
+  token: Joi.string().required(),
+});
+
+export { loginValidation, registerValidation, refreshValidation };

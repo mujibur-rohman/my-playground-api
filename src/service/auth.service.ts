@@ -5,6 +5,7 @@ import { logger } from "../utils/logger";
 import { validate } from "../validation";
 import {
   loginValidation,
+  refreshValidation,
   registerValidation,
 } from "../validation/auth.validation";
 import bcrypt from "bcrypt";
@@ -73,9 +74,30 @@ const login = async (request: any) => {
       role: user.role,
     },
     {
+      expiresIn: "1h",
+    }
+  );
+  const refreshToken = signJWT(
+    {
+      username: user.username,
+      role: user.role,
+    },
+    {
       expiresIn: "1d",
     }
   );
+
+  await db.user.update({
+    data: {
+      token: refreshToken,
+    },
+    where: {
+      username: user.username,
+    },
+    select: {
+      username: true,
+    },
+  });
 
   return {
     name: user.name,
@@ -83,11 +105,62 @@ const login = async (request: any) => {
     role: user.role,
     token: {
       accessToken,
+      refreshToken,
     },
+  };
+};
+
+const refreshToken = async (request: any) => {
+  const token = validate(refreshValidation, request);
+  const refreshToken = await db.user.findFirst({
+    where: {
+      token: token.token,
+    },
+    select: {
+      token: true,
+      username: true,
+      role: true,
+    },
+  });
+
+  if (!refreshToken) throw new ResponseError(404, "token invalid");
+
+  const newAccessToken = signJWT(
+    {
+      username: refreshToken.username,
+      role: refreshToken.role,
+    },
+    {
+      expiresIn: "1h",
+    }
+  );
+  const newRefreshToken = signJWT(
+    {
+      username: refreshToken.username,
+      role: refreshToken.role,
+    },
+    {
+      expiresIn: "1d",
+    }
+  );
+
+  await db.user.update({
+    data: {
+      token: newRefreshToken,
+    },
+    where: {
+      username: refreshToken.username,
+    },
+  });
+
+  return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
   };
 };
 
 export default {
   register,
   login,
+  refreshToken,
 };
