@@ -47,6 +47,7 @@ const login = async (request: any) => {
       username: userValid.username,
     },
     select: {
+      id: true,
       username: true,
       password: true,
       name: true,
@@ -100,9 +101,11 @@ const login = async (request: any) => {
   });
 
   return {
+    id: user.id,
     name: user.name,
     username: user.username,
     role: user.role,
+    profilePicture: user.profile?.photoUrl || null,
     token: {
       accessToken,
       refreshToken,
